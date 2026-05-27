@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smbc-brightlearn-static-site"
+version = "0.1.0"
+description = "Static site generator for BrightLearn book JSON with LLM-powered summary translations."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "jinja2>=3.1.4",
+  "httpx>=0.27.0",
+  "pydantic>=2.7.0",
+  "python-dotenv>=1.0.1",
+  "watchdog>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2.0",
+  "beautifulsoup4>=4.12.3",
+  "ruff>=0.4.0",
+]
+
+[project.scripts]
+brightlearn-site = "brightlearn_site.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+brightlearn_site = [
+  "templates/**/*.html",
+  "static/**/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

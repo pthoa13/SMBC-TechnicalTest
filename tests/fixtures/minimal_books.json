@@ -1,0 +1,26 @@
+{
+  "source": "Test",
+  "total_books": 1,
+  "books": [
+    {
+      "book_title": "Sample Book",
+      "cover_image_url": "https://example.com/cover.png",
+      "author": {
+        "name": "Sample Author"
+      },
+      "description": "A short sample description.",
+      "table_of_contents": [
+        {
+          "chapter_number": 1,
+          "chapter_title": "Sample Chapter",
+          "sections": [
+            {
+              "title": "Sample Section",
+              "url": "https://example.com/page1.html"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  {% for crumb in breadcrumbs | default([]) %}
+    <a href="{{ crumb.href }}">{{ crumb.label }}</a>
+  {% endfor %}
+</nav>

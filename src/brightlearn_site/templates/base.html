@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    {% include "partials/head.html" %}
+  </head>
+  <body>
+    {% include "partials/header.html" %}
+    <main class="page-shell">
+      {% block content %}{% endblock %}
+    </main>
+    <script src="{{ asset_base | default('assets') }}/js/app.js"></script>
+  </body>
+</html>

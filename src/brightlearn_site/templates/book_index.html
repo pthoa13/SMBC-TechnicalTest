@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="book-page">
+  {% include "partials/breadcrumbs.html" %}
+  <h1>{{ book.book_title }}</h1>
+  {% include "partials/language_flags.html" %}
+</article>
+{% endblock %}

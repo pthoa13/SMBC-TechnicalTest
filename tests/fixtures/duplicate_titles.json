@@ -1,0 +1,24 @@
+{
+  "source": "Test",
+  "total_books": 2,
+  "books": [
+    {
+      "book_title": "Duplicate Title",
+      "cover_image_url": "https://example.com/one.png",
+      "author": {
+        "name": "Author One"
+      },
+      "description": "First description.",
+      "table_of_contents": []
+    },
+    {
+      "book_title": "Duplicate Title",
+      "cover_image_url": "https://example.com/two.png",
+      "author": {
+        "name": "Author Two"
+      },
+      "description": "Second description.",
+      "table_of_contents": []
+    }
+  ]
+}
