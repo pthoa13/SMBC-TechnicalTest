@@ -1,7 +1,55 @@
-from brightlearn_site.site.renderer import create_template_environment
+from pathlib import Path
+
+from brightlearn_site.loader import load_json_file
+from brightlearn_site.normalizer import normalize_dataset
+from brightlearn_site.site.planner import build_render_plan
+from brightlearn_site.site.renderer import create_template_environment, render_plan
 
 
 def test_template_environment_loads_base_template() -> None:
     env = create_template_environment()
 
     assert env.get_template("base.html")
+
+
+def test_render_plan_writes_static_pages(tmp_path: Path) -> None:
+    data = load_json_file(Path("tests/fixtures/minimal_books.json"))
+    dataset = normalize_dataset(data)
+    plan = build_render_plan(dataset, Path("tests/fixtures/minimal_books.json"), tmp_path)
+
+    render_plan(plan)
+
+    dataset_index = tmp_path / "minimal_books" / "index.html"
+    book_index = tmp_path / "minimal_books" / "books" / "sample-book" / "index.html"
+    section_page = (
+        tmp_path
+        / "minimal_books"
+        / "books"
+        / "sample-book"
+        / "sections"
+        / "sample-section.html"
+    )
+
+    assert dataset_index.exists()
+    assert book_index.exists()
+    assert section_page.exists()
+    assert (tmp_path / "minimal_books" / "assets" / "css" / "styles.css").exists()
+
+    assert "Sample Book" in dataset_index.read_text(encoding="utf-8")
+    assert "A short sample description." in book_index.read_text(encoding="utf-8")
+    assert "Open original BrightLearn section" in section_page.read_text(encoding="utf-8")
+
+
+def test_render_sample_dataset_creates_all_book_and_section_pages(tmp_path: Path) -> None:
+    data = load_json_file(Path("data/samples/brightlearn_books.json"))
+    dataset = normalize_dataset(data)
+    plan = build_render_plan(dataset, Path("data/samples/brightlearn_books.json"), tmp_path)
+
+    render_plan(plan)
+
+    assert (tmp_path / "brightlearn_books" / "index.html").exists()
+    assert len(plan.book_pages) == 5
+    for book_page in plan.book_pages:
+        assert book_page.output_path.exists()
+        for section_page in book_page.section_pages:
+            assert section_page.output_path.exists()

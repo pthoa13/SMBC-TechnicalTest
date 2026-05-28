@@ -5,9 +5,12 @@
   </head>
   <body>
     {% include "partials/header.html" %}
-    <main class="page-shell">
-      {% block content %}{% endblock %}
-    </main>
-    <script src="{{ asset_base | default('assets') }}/js/app.js"></script>
+    <div class="app-shell">
+      {% include "partials/sidebar.html" %}
+      <main class="page-shell">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+    <script src="{{ js_url }}"></script>
   </body>
 </html>

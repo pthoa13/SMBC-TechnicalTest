@@ -1,8 +1,19 @@
-"""Command-line interface placeholders for the BrightLearn site generator."""
+"""Command-line interface for the BrightLearn site generator."""
 
 from __future__ import annotations
 
 import argparse
+import json
+import sys
+from pathlib import Path
+
+from pydantic import ValidationError
+
+from brightlearn_site.loader import load_json_file
+from brightlearn_site.normalizer import normalize_dataset
+from brightlearn_site.site.planner import build_render_plan, output_root_for_input
+from brightlearn_site.site.renderer import render_plan
+from brightlearn_site.validator import validate_dataset
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -34,4 +45,33 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return 0
 
-    raise NotImplementedError(f"Command '{args.command}' will be implemented in the next phase.")
+    try:
+        if args.command == "validate":
+            return _validate_command(Path(args.input_json))
+        if args.command == "render":
+            return _render_command(Path(args.input_json), Path(args.output_dir))
+        if args.command == "watch":
+            print("Batch watcher is part of Spec 003 and is not implemented yet.", file=sys.stderr)
+            return 2
+    except (OSError, json.JSONDecodeError, TypeError, ValidationError) as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+
+    parser.error(f"Unknown command: {args.command}")
+    return 2
+
+
+def _validate_command(input_path: Path) -> int:
+    data = load_json_file(input_path)
+    dataset = validate_dataset(data)
+    print(f"Valid BrightLearn dataset: {len(dataset.books)} books")
+    return 0
+
+
+def _render_command(input_path: Path, output_dir: Path) -> int:
+    data = load_json_file(input_path)
+    dataset = normalize_dataset(data)
+    plan = build_render_plan(dataset, input_path, output_dir)
+    render_plan(plan)
+    print(f"Rendered {len(dataset.books)} books to {output_root_for_input(input_path, output_dir)}")
+    return 0

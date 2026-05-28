@@ -1,3 +1,10 @@
 <article class="book-card">
-  <h2>{{ book.book_title }}</h2>
+  <a class="book-card-link" href="{{ url_for(book_page.output_path) }}">
+    <img src="{{ book_page.book.cover_image_url }}" alt="Cover for {{ book_page.book.book_title }}" loading="lazy">
+    <span class="book-card-body">
+      <span class="book-card-title">{{ book_page.book.book_title }}</span>
+      <span class="book-card-author">by {{ book_page.book.author.name }}</span>
+      <span class="book-card-meta">{{ book_page.section_pages | length }} sections</span>
+    </span>
+  </a>
 </article>

@@ -2,6 +2,15 @@
 
 {% block content %}
 <section class="dataset-index">
-  <h1>{{ dataset_title | default("BrightLearn Books") }}</h1>
+  <p class="eyebrow">{{ dataset.source | default("BrightLearn", true) }}</p>
+  <h1>{{ dataset_title | default("BrightLearn Books", true) }}</h1>
+  <p class="lead">
+    Browse {{ book_pages | length }} generated books with local navigation and static section pages.
+  </p>
+  <div class="book-grid">
+    {% for book_page in book_pages %}
+      {% include "partials/book_card.html" %}
+    {% endfor %}
+  </div>
 </section>
 {% endblock %}

@@ -3,6 +3,28 @@
 {% block content %}
 <article class="section-page">
   {% include "partials/breadcrumbs.html" %}
+  <p class="eyebrow">{{ book.book_title }}</p>
   <h1>{{ section.title }}</h1>
+  <p class="section-context">
+    Chapter {{ chapter.chapter_number }}: {{ chapter.chapter_title }}
+  </p>
+  <p>
+    This static page was generated from the book table of contents. The current JSON provides
+    the section title and original BrightLearn URL, but not full local section body text.
+  </p>
+  <p>
+    <a class="button-link" href="{{ section_page.source_url }}">Open original BrightLearn section</a>
+  </p>
+
+  <nav class="section-pager" aria-label="Section pagination">
+    {% if navigation.previous_section %}
+      <a href="{{ url_for(navigation.previous_section.output_path) }}">Previous: {{ navigation.previous_section.section.title }}</a>
+    {% else %}
+      <span></span>
+    {% endif %}
+    {% if navigation.next_section %}
+      <a href="{{ url_for(navigation.next_section.output_path) }}">Next: {{ navigation.next_section.section.title }}</a>
+    {% endif %}
+  </nav>
 </article>
 {% endblock %}

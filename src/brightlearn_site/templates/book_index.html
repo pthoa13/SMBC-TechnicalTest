@@ -3,7 +3,29 @@
 {% block content %}
 <article class="book-page">
   {% include "partials/breadcrumbs.html" %}
-  <h1>{{ book.book_title }}</h1>
-  {% include "partials/language_flags.html" %}
+  <div class="book-hero">
+    <img src="{{ book.cover_image_url }}" alt="Cover for {{ book.book_title }}">
+    <div>
+      <p class="eyebrow">by {{ book.author.name }}</p>
+      <h1>{{ book.book_title }}</h1>
+      <p class="book-description">{{ book.description }}</p>
+    </div>
+  </div>
+
+  <section class="toc">
+    <h2>Table of contents</h2>
+    {% for chapter in book.table_of_contents %}
+      <section class="chapter">
+        <h3>Chapter {{ chapter.chapter_number }}: {{ chapter.chapter_title }}</h3>
+        <ol>
+          {% for section_page in book_page.section_pages if section_page.chapter.chapter_number == chapter.chapter_number %}
+            <li>
+              <a href="{{ url_for(section_page.output_path) }}">{{ section_page.section.title }}</a>
+            </li>
+          {% endfor %}
+        </ol>
+      </section>
+    {% endfor %}
+  </section>
 </article>
 {% endblock %}
