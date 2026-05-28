@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from brightlearn_site.cli import main
+from brightlearn_site.translation.service import EnglishOnlyTranslationService
 
 
 def test_validate_command_reports_valid_dataset(capsys) -> None:
@@ -33,7 +34,7 @@ def test_render_command_without_api_key_warns_and_falls_back(
     capsys,
     monkeypatch,
 ) -> None:
-    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.setenv("LLM_API_KEY", "")
     monkeypatch.setenv("TRANSLATION_CACHE_PATH", str(tmp_path / "cache.json"))
 
     exit_code = main(
@@ -48,3 +49,33 @@ def test_render_command_without_api_key_warns_and_falls_back(
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "rendering English summaries only" in captured.err
+
+
+def test_watch_command_wires_batch_watcher_without_real_llm(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    calls = []
+
+    def fake_run_watch(input_dir, output_dir, *, translation_service):
+        calls.append((input_dir, output_dir, translation_service))
+        return 0
+
+    monkeypatch.setattr("brightlearn_site.cli.run_watch", fake_run_watch)
+
+    exit_code = main(
+        [
+            "watch",
+            "--input-dir",
+            str(tmp_path / "batch-process"),
+            "--output-dir",
+            str(tmp_path / "rendered"),
+            "--skip-translations",
+        ]
+    )
+
+    assert exit_code == 0
+    assert len(calls) == 1
+    assert calls[0][0] == tmp_path / "batch-process"
+    assert calls[0][1] == tmp_path / "rendered"
+    assert isinstance(calls[0][2], EnglishOnlyTranslationService)

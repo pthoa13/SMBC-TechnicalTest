@@ -9,7 +9,9 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from brightlearn_site.batch.watcher import run_watch
 from brightlearn_site.loader import load_json_file
+from brightlearn_site.logging_config import configure_logging
 from brightlearn_site.normalizer import normalize_dataset
 from brightlearn_site.settings import load_settings
 from brightlearn_site.site.planner import build_render_plan, output_root_for_input
@@ -43,6 +45,11 @@ def build_parser() -> argparse.ArgumentParser:
     watch = subparsers.add_parser("watch", help="Watch batch-process for JSON files.")
     watch.add_argument("--input-dir", default="batch-process")
     watch.add_argument("--output-dir", default="rendered")
+    watch.add_argument(
+        "--skip-translations",
+        action="store_true",
+        help="Render English summaries only without calling the remote LLM.",
+    )
 
     return parser
 
@@ -65,8 +72,11 @@ def main(argv: list[str] | None = None) -> int:
                 skip_translations=args.skip_translations,
             )
         if args.command == "watch":
-            print("Batch watcher is part of Spec 003 and is not implemented yet.", file=sys.stderr)
-            return 2
+            return _watch_command(
+                Path(args.input_dir),
+                Path(args.output_dir),
+                skip_translations=args.skip_translations,
+            )
     except (OSError, json.JSONDecodeError, TypeError, ValidationError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
@@ -91,6 +101,13 @@ def _render_command(input_path: Path, output_dir: Path, *, skip_translations: bo
     render_plan(plan, translation_service=translation_service)
     print(f"Rendered {len(dataset.books)} books to {output_root_for_input(input_path, output_dir)}")
     return 0
+
+
+def _watch_command(input_dir: Path, output_dir: Path, *, skip_translations: bool) -> int:
+    configure_logging()
+    settings = load_settings()
+    translation_service = _translation_service(settings, skip_translations=skip_translations)
+    return run_watch(input_dir, output_dir, translation_service=translation_service)
 
 
 def _translation_service(settings, *, skip_translations: bool):
