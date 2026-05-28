@@ -73,25 +73,50 @@ Runtime files under `batch-process/`, `rendered/`, and `logs/` are ignored by Gi
 
 ## Setup
 
-Create and activate a virtual environment:
+This project is expected to run on Python 3.12. Use `uv` to provision Python and install
+dependencies.
+
+Install Python 3.12 with `uv`:
 
 ```bash
-python3.12 -m venv .venv
+uv python install 3.12
+```
+
+Create a project virtual environment with Python 3.12:
+
+```bash
+uv venv --python 3.12 .venv
+```
+
+Activate the virtual environment on macOS/Linux:
+
+```bash
 source .venv/bin/activate
 ```
 
 On Windows PowerShell:
 
 ```powershell
-py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-Install dependencies:
+Install dependencies from `requirements.txt` with `uv pip`:
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+uv pip install -r requirements.txt
+```
+
+Confirm the environment:
+
+```bash
+python --version
+uv pip list
+```
+
+Expected Python version:
+
+```text
+Python 3.12.x
 ```
 
 ## Environment Configuration
@@ -196,9 +221,18 @@ PYTHONPATH=src ruff check .
 python -m compileall src tests
 ```
 
+If the virtual environment is not activated, call the venv binaries directly:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m pytest
+PYTHONPATH=src .venv/bin/ruff check .
+.venv/bin/python -m compileall src tests
+```
+
 Latest local validation result:
 
 ```text
+environment: Python 3.12.13 provisioned by uv
 pytest: 55 passed
 ruff: All checks passed
 compileall: passed
