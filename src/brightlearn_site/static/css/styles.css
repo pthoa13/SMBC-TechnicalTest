@@ -304,6 +304,8 @@ h3 {
 }
 
 .language-flags button {
+  display: inline-grid;
+  place-items: center;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
@@ -312,6 +314,14 @@ h3 {
   font-weight: 800;
   min-height: 40px;
   min-width: 44px;
+}
+
+.language-flags img {
+  display: block;
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgb(23 32 51 / 12%);
 }
 
 .language-flags button[aria-pressed="true"] {

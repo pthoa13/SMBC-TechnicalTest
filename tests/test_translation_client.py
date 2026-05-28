@@ -20,6 +20,7 @@ def _config(api_key: str = "test-key") -> LLMClientConfig:
         model="test-model",
         base_url="https://example.test/v1",
         timeout_seconds=10,
+        max_completion_tokens=1200,
     )
 
 
@@ -31,7 +32,10 @@ def test_client_rejects_missing_api_key() -> None:
 
 
 def test_client_returns_message_content(monkeypatch) -> None:
+    captured_payload = {}
+
     def fake_post(*args, **kwargs):
+        captured_payload.update(kwargs["json"])
         return httpx.Response(
             200,
             json={"choices": [{"message": {"content": '{"translations":{}}'}}]},
@@ -42,6 +46,8 @@ def test_client_returns_message_content(monkeypatch) -> None:
     client = OpenAICompatibleTranslationClient(_config())
 
     assert client.translate_summary("Translate this") == '{"translations":{}}'
+    assert captured_payload["response_format"] == {"type": "json_object"}
+    assert captured_payload["max_completion_tokens"] == 1200
 
 
 def test_client_maps_429_to_rate_limit(monkeypatch) -> None:

@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from pydantic import ValidationError
-
 from brightlearn_site.batch.file_state import is_supported_batch_file
-from brightlearn_site.exceptions import BrightLearnError
 from brightlearn_site.loader import load_json_file
 from brightlearn_site.normalizer import normalize_dataset
 from brightlearn_site.site.planner import build_render_plan, output_root_for_input
@@ -59,7 +55,7 @@ def process_batch_file(
             plan,
             translation_service=translation_service or EnglishOnlyTranslationService(),
         )
-    except (OSError, json.JSONDecodeError, TypeError, ValidationError, BrightLearnError) as error:
+    except Exception as error:
         message = "Batch processing failed."
         LOGGER.error("%s file=%s error=%s", message, input_path.name, error)
         return BatchProcessResult(

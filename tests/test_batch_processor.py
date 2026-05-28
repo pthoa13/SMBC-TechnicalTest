@@ -141,6 +141,29 @@ def test_process_batch_file_returns_failure_for_unsupported_schema(tmp_path: Pat
     assert result.error_type == "ValidationError"
 
 
+def test_process_batch_file_returns_failure_for_unexpected_render_error(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    input_file = tmp_path / "books.json"
+    input_file.write_text(FIXTURE_PATH.read_text(encoding="utf-8"), encoding="utf-8")
+
+    def fail_render(*args, **kwargs):
+        raise RuntimeError("template failure")
+
+    monkeypatch.setattr("brightlearn_site.batch.processor.render_plan", fail_render)
+
+    result = process_batch_file(
+        input_file,
+        tmp_path / "rendered",
+        translation_service=EnglishOnlyTranslationService(),
+    )
+
+    assert not result.success
+    assert result.error_type == "RuntimeError"
+    assert "template failure" in result.message
+
+
 def test_process_batch_file_skips_unsupported_file(tmp_path: Path) -> None:
     input_file = tmp_path / "books.txt"
     input_file.write_text("{}", encoding="utf-8")

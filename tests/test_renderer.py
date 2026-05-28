@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from brightlearn_site.loader import load_json_file
 from brightlearn_site.models import SummaryTranslations
 from brightlearn_site.normalizer import normalize_dataset
@@ -15,6 +17,11 @@ class FakeTranslationService:
             fr="FR summary",
             de="DE summary",
         )
+
+
+class FailingTranslationService:
+    def translate_book(self, book):
+        raise RuntimeError("translation boom")
 
 
 def test_template_environment_loads_base_template() -> None:
@@ -78,6 +85,9 @@ def test_render_book_page_embeds_translation_ui(tmp_path: Path) -> None:
 
     assert 'data-language="en"' in html
     assert 'data-language="es"' in html
+    assert 'img/flags/es.svg' in html
+    assert 'img/flags/fr.svg' in html
+    assert 'img/flags/de.svg' in html
     assert 'data-summary-es="ES summary"' in html
     assert 'data-summary-fr="FR summary"' in html
     assert 'data-summary-de="DE summary"' in html
@@ -95,3 +105,20 @@ def test_render_book_page_falls_back_to_english_translation_note(tmp_path: Path)
 
     assert "Translations are unavailable. Showing the English summary." in html
     assert "A short sample description." in html
+
+
+def test_render_plan_keeps_existing_output_if_render_fails(tmp_path: Path) -> None:
+    data = load_json_file(Path("tests/fixtures/minimal_books.json"))
+    dataset = normalize_dataset(data)
+    plan = build_render_plan(dataset, Path("tests/fixtures/minimal_books.json"), tmp_path)
+
+    render_plan(plan)
+    dataset_index = tmp_path / "minimal_books" / "index.html"
+    original_html = dataset_index.read_text(encoding="utf-8")
+
+    with pytest.raises(RuntimeError):
+        render_plan(plan, translation_service=FailingTranslationService())
+
+    assert dataset_index.exists()
+    assert dataset_index.read_text(encoding="utf-8") == original_html
+    assert not list(tmp_path.glob(".minimal_books.tmp-*"))

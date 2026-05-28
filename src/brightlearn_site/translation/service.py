@@ -61,6 +61,7 @@ class SummaryTranslationService:
                 model=settings.llm_model,
                 base_url=settings.llm_base_url,
                 timeout_seconds=settings.translation_timeout_seconds,
+                max_completion_tokens=settings.llm_max_completion_tokens,
             )
         )
         self.retry_policy = retry_policy or RetryPolicy(

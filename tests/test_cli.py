@@ -51,6 +51,28 @@ def test_render_command_without_api_key_warns_and_falls_back(
     assert "rendering English summaries only" in captured.err
 
 
+def test_render_command_treats_placeholder_api_key_as_missing(
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("LLM_API_KEY", "your_api_key_here")
+    monkeypatch.setenv("TRANSLATION_CACHE_PATH", str(tmp_path / "cache.json"))
+
+    exit_code = main(
+        [
+            "render",
+            "tests/fixtures/minimal_books.json",
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "rendering English summaries only" in captured.err
+
+
 def test_watch_command_wires_batch_watcher_without_real_llm(
     tmp_path: Path,
     monkeypatch,

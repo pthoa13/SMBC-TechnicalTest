@@ -22,6 +22,7 @@ class LLMClientConfig:
     model: str
     base_url: str
     timeout_seconds: int
+    max_completion_tokens: int
 
 
 class OpenAICompatibleTranslationClient:
@@ -33,20 +34,22 @@ class OpenAICompatibleTranslationClient:
             raise LLMConfigurationError("LLM_API_KEY is not configured.")
 
         try:
+            payload = {
+                "model": self.config.model,
+                "messages": [
+                    {"role": "system", "content": TRANSLATION_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "response_format": {"type": "json_object"},
+                "max_completion_tokens": self.config.max_completion_tokens,
+            }
             response = httpx.post(
                 f"{self.config.base_url.rstrip('/')}/chat/completions",
                 headers={
                     "Authorization": f"Bearer {self.config.api_key}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "model": self.config.model,
-                    "messages": [
-                        {"role": "system", "content": TRANSLATION_SYSTEM_PROMPT},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    "response_format": {"type": "json_object"},
-                },
+                json=payload,
                 timeout=self.config.timeout_seconds,
             )
         except (httpx.TimeoutException, httpx.ConnectError, httpx.NetworkError) as error:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import uuid
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -23,16 +24,27 @@ def create_template_environment(template_dir: Path = TEMPLATE_DIR) -> Environmen
 
 
 def render_plan(plan: RenderPlan, translation_service: TranslationService | None = None) -> None:
-    if plan.output_root.exists():
-        shutil.rmtree(plan.output_root)
-    plan.output_root.mkdir(parents=True, exist_ok=True)
-    copy_static_assets(plan.output_root / "assets")
+    staging_root = _staging_root_for(plan.output_root)
+    if staging_root.exists():
+        shutil.rmtree(staging_root)
 
-    translation_service = translation_service or EnglishOnlyTranslationService()
-    translations = _build_translation_context(plan, translation_service)
-    environment = create_template_environment()
-    for target in plan.targets:
-        _render_target(environment, plan, target, translations)
+    try:
+        staging_root.mkdir(parents=True, exist_ok=True)
+        copy_static_assets(staging_root / "assets")
+
+        translation_service = translation_service or EnglishOnlyTranslationService()
+        translations = _build_translation_context(plan, translation_service)
+        environment = create_template_environment()
+        for target in plan.targets:
+            _render_target(environment, plan, target, translations, staging_root)
+
+        if plan.output_root.exists():
+            shutil.rmtree(plan.output_root)
+        staging_root.replace(plan.output_root)
+    except Exception:
+        if staging_root.exists():
+            shutil.rmtree(staging_root)
+        raise
 
 
 def _render_target(
@@ -40,11 +52,21 @@ def _render_target(
     plan: RenderPlan,
     target: RenderTarget,
     translations: dict[str, SummaryTranslations],
+    staging_root: Path,
 ) -> None:
     template = environment.get_template(target.template_name)
     context = _base_context(plan, target, translations) | target.context
-    target.output_path.parent.mkdir(parents=True, exist_ok=True)
-    target.output_path.write_text(template.render(context), encoding="utf-8")
+    staged_output_path = _staged_path(plan.output_root, staging_root, target.output_path)
+    staged_output_path.parent.mkdir(parents=True, exist_ok=True)
+    staged_output_path.write_text(template.render(context), encoding="utf-8")
+
+
+def _staging_root_for(output_root: Path) -> Path:
+    return output_root.parent / f".{output_root.name}.tmp-{uuid.uuid4().hex}"
+
+
+def _staged_path(output_root: Path, staging_root: Path, output_path: Path) -> Path:
+    return staging_root / output_path.relative_to(output_root)
 
 
 def _base_context(
