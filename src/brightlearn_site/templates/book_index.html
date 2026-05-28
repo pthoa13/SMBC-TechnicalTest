@@ -8,7 +8,20 @@
     <div>
       <p class="eyebrow">by {{ book.author.name }}</p>
       <h1>{{ book.book_title }}</h1>
-      <p class="book-description">{{ book.description }}</p>
+      {% include "partials/language_flags.html" %}
+      <div
+        class="book-description"
+        data-summary-switcher
+        data-summary-en="{{ summary_translations.en }}"
+        {% if summary_translations.es %}data-summary-es="{{ summary_translations.es }}"{% endif %}
+        {% if summary_translations.fr %}data-summary-fr="{{ summary_translations.fr }}"{% endif %}
+        {% if summary_translations.de %}data-summary-de="{{ summary_translations.de }}"{% endif %}
+      >
+        <p data-summary-output>{{ summary_translations.en }}</p>
+        {% if summary_translations.used_fallback %}
+          <p class="translation-note">Translations are unavailable. Showing the English summary.</p>
+        {% endif %}
+      </div>
     </div>
   </div>
 

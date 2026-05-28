@@ -41,3 +41,12 @@ class TranslationBundle(BaseModel):
     es: str
     fr: str
     de: str
+
+
+class SummaryTranslations(BaseModel):
+    en: str
+    es: str | None = None
+    fr: str | None = None
+    de: str | None = None
+    used_fallback: bool = False
+    error: str | None = None

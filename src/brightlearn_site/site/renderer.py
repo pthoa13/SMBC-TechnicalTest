@@ -7,10 +7,12 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from brightlearn_site.models import SummaryTranslations
 from brightlearn_site.paths import TEMPLATE_DIR
 from brightlearn_site.site.asset_copier import copy_static_assets
 from brightlearn_site.site.planner import BookPage, RenderPlan, RenderTarget, SectionPage
 from brightlearn_site.site.urls import asset_url, relative_url
+from brightlearn_site.translation.service import EnglishOnlyTranslationService, TranslationService
 
 
 def create_template_environment(template_dir: Path = TEMPLATE_DIR) -> Environment:
@@ -20,25 +22,41 @@ def create_template_environment(template_dir: Path = TEMPLATE_DIR) -> Environmen
     )
 
 
-def render_plan(plan: RenderPlan) -> None:
+def render_plan(plan: RenderPlan, translation_service: TranslationService | None = None) -> None:
     if plan.output_root.exists():
         shutil.rmtree(plan.output_root)
     plan.output_root.mkdir(parents=True, exist_ok=True)
     copy_static_assets(plan.output_root / "assets")
 
+    translation_service = translation_service or EnglishOnlyTranslationService()
+    translations = _build_translation_context(plan, translation_service)
     environment = create_template_environment()
     for target in plan.targets:
-        _render_target(environment, plan, target)
+        _render_target(environment, plan, target, translations)
 
 
-def _render_target(environment: Environment, plan: RenderPlan, target: RenderTarget) -> None:
+def _render_target(
+    environment: Environment,
+    plan: RenderPlan,
+    target: RenderTarget,
+    translations: dict[str, SummaryTranslations],
+) -> None:
     template = environment.get_template(target.template_name)
-    context = _base_context(plan, target) | target.context
+    context = _base_context(plan, target, translations) | target.context
     target.output_path.parent.mkdir(parents=True, exist_ok=True)
     target.output_path.write_text(template.render(context), encoding="utf-8")
 
 
-def _base_context(plan: RenderPlan, target: RenderTarget) -> dict[str, object]:
+def _base_context(
+    plan: RenderPlan,
+    target: RenderTarget,
+    translations: dict[str, SummaryTranslations],
+) -> dict[str, object]:
+    active_translation: SummaryTranslations | None = None
+    book_page = target.context.get("book_page")
+    if isinstance(book_page, BookPage):
+        active_translation = translations[book_page.slug]
+
     return {
         "asset_base": relative_url(target.output_path, plan.output_root / "assets"),
         "home_url": relative_url(target.output_path, plan.output_root / "index.html"),
@@ -48,7 +66,18 @@ def _base_context(plan: RenderPlan, target: RenderTarget) -> dict[str, object]:
         "url_for": lambda path: relative_url(target.output_path, path),
         "breadcrumbs": _breadcrumbs(plan, target),
         "navigation": _navigation(plan, target),
+        "summary_translations": active_translation,
         "page_title": _page_title(target),
+    }
+
+
+def _build_translation_context(
+    plan: RenderPlan,
+    translation_service: TranslationService,
+) -> dict[str, SummaryTranslations]:
+    return {
+        book_page.slug: translation_service.translate_book(book_page.book)
+        for book_page in plan.book_pages
     }
 
 

@@ -11,8 +11,13 @@ from pydantic import ValidationError
 
 from brightlearn_site.loader import load_json_file
 from brightlearn_site.normalizer import normalize_dataset
+from brightlearn_site.settings import load_settings
 from brightlearn_site.site.planner import build_render_plan, output_root_for_input
 from brightlearn_site.site.renderer import render_plan
+from brightlearn_site.translation.service import (
+    EnglishOnlyTranslationService,
+    SummaryTranslationService,
+)
 from brightlearn_site.validator import validate_dataset
 
 
@@ -29,6 +34,11 @@ def build_parser() -> argparse.ArgumentParser:
     render = subparsers.add_parser("render", help="Render a BrightLearn JSON file.")
     render.add_argument("input_json")
     render.add_argument("--output-dir", default="rendered")
+    render.add_argument(
+        "--skip-translations",
+        action="store_true",
+        help="Render English summaries only without calling the remote LLM.",
+    )
 
     watch = subparsers.add_parser("watch", help="Watch batch-process for JSON files.")
     watch.add_argument("--input-dir", default="batch-process")
@@ -49,7 +59,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "validate":
             return _validate_command(Path(args.input_json))
         if args.command == "render":
-            return _render_command(Path(args.input_json), Path(args.output_dir))
+            return _render_command(
+                Path(args.input_json),
+                Path(args.output_dir),
+                skip_translations=args.skip_translations,
+            )
         if args.command == "watch":
             print("Batch watcher is part of Spec 003 and is not implemented yet.", file=sys.stderr)
             return 2
@@ -68,10 +82,24 @@ def _validate_command(input_path: Path) -> int:
     return 0
 
 
-def _render_command(input_path: Path, output_dir: Path) -> int:
+def _render_command(input_path: Path, output_dir: Path, *, skip_translations: bool) -> int:
     data = load_json_file(input_path)
     dataset = normalize_dataset(data)
     plan = build_render_plan(dataset, input_path, output_dir)
-    render_plan(plan)
+    settings = load_settings()
+    translation_service = _translation_service(settings, skip_translations=skip_translations)
+    render_plan(plan, translation_service=translation_service)
     print(f"Rendered {len(dataset.books)} books to {output_root_for_input(input_path, output_dir)}")
     return 0
+
+
+def _translation_service(settings, *, skip_translations: bool):
+    if skip_translations:
+        return EnglishOnlyTranslationService()
+    if not settings.llm_api_key:
+        print(
+            "LLM_API_KEY is not configured; rendering English summaries only.",
+            file=sys.stderr,
+        )
+        return EnglishOnlyTranslationService()
+    return SummaryTranslationService(settings=settings)

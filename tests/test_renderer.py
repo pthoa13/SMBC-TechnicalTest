@@ -1,9 +1,20 @@
 from pathlib import Path
 
 from brightlearn_site.loader import load_json_file
+from brightlearn_site.models import SummaryTranslations
 from brightlearn_site.normalizer import normalize_dataset
 from brightlearn_site.site.planner import build_render_plan
 from brightlearn_site.site.renderer import create_template_environment, render_plan
+
+
+class FakeTranslationService:
+    def translate_book(self, book):
+        return SummaryTranslations(
+            en=book.description,
+            es="ES summary",
+            fr="FR summary",
+            de="DE summary",
+        )
 
 
 def test_template_environment_loads_base_template() -> None:
@@ -53,3 +64,34 @@ def test_render_sample_dataset_creates_all_book_and_section_pages(tmp_path: Path
         assert book_page.output_path.exists()
         for section_page in book_page.section_pages:
             assert section_page.output_path.exists()
+
+
+def test_render_book_page_embeds_translation_ui(tmp_path: Path) -> None:
+    data = load_json_file(Path("tests/fixtures/minimal_books.json"))
+    dataset = normalize_dataset(data)
+    plan = build_render_plan(dataset, Path("tests/fixtures/minimal_books.json"), tmp_path)
+
+    render_plan(plan, translation_service=FakeTranslationService())
+
+    book_index = tmp_path / "minimal_books" / "books" / "sample-book" / "index.html"
+    html = book_index.read_text(encoding="utf-8")
+
+    assert 'data-language="en"' in html
+    assert 'data-language="es"' in html
+    assert 'data-summary-es="ES summary"' in html
+    assert 'data-summary-fr="FR summary"' in html
+    assert 'data-summary-de="DE summary"' in html
+
+
+def test_render_book_page_falls_back_to_english_translation_note(tmp_path: Path) -> None:
+    data = load_json_file(Path("tests/fixtures/minimal_books.json"))
+    dataset = normalize_dataset(data)
+    plan = build_render_plan(dataset, Path("tests/fixtures/minimal_books.json"), tmp_path)
+
+    render_plan(plan)
+
+    book_index = tmp_path / "minimal_books" / "books" / "sample-book" / "index.html"
+    html = book_index.read_text(encoding="utf-8")
+
+    assert "Translations are unavailable. Showing the English summary." in html
+    assert "A short sample description." in html

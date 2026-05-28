@@ -48,7 +48,7 @@ Implement a translation service that translates book summaries into Spanish, Fre
 
 ## Business Logic Flow
 
-1. Build cache key from provider, model, source language, target languages, book title, and description hash.
+1. Build cache key from provider, model, source language, target languages, book title, description hash, and prompt version.
 2. Return cached translations when available.
 3. Build strict JSON translation prompt.
 4. Call remote LLM API with timeout.
@@ -101,6 +101,5 @@ Implement a translation service that translates book summaries into Spanish, Fre
 
 ## Open Questions
 
-- Final LLM provider and model.
-- Whether prompt version should be part of the cache key.
+- Final production LLM provider and model.
 - Exact behavior when credentials are absent.

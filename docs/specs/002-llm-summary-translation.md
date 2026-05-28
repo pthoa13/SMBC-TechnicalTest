@@ -17,11 +17,24 @@ Translate each book's English summary/description into Spanish, French, and Germ
 - Required target language keys are `es`, `fr`, and `de`.
 - Use a remote LLM API configured through environment variables.
 - Prompt the LLM to return strict JSON.
+- The accepted response shape is:
+
+```json
+{
+  "translations": {
+    "es": "Spanish summary here",
+    "fr": "French summary here",
+    "de": "German summary here"
+  }
+}
+```
+
 - Validate LLM JSON before accepting it.
 - Attempt conservative JSON repair when output is malformed.
 - Retry the LLM call if repair fails.
 - Handle HTTP 429, retryable 5xx responses, timeouts, and disconnects.
 - Use exponential backoff within a configured retry budget.
+- Account for modern LLM reasoning/thinking-token behavior by not assuming all provider output belongs in visible content and by validating only the final returned JSON content.
 - Cache successful translations.
 - Fall back to English summaries if translation fails after retries.
 - Render flag controls on book pages near the title.
@@ -70,6 +83,6 @@ Translate each book's English summary/description into Spanish, French, and Germ
 
 ## Open Questions
 
-- Which final LLM provider and model will be used for translation?
+- Which final production LLM provider and model will be used for translation? The implementation may use OpenAI-compatible configuration defaults while keeping provider/model configurable.
 - Should cache entries include a prompt version in addition to provider/model/source hash?
 - Should missing API credentials block translation only, or should they emit an explicit warning and render English-only output?
