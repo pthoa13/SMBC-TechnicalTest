@@ -140,7 +140,12 @@ Important:
   not accidentally call the LLM.
 - `LLM_MAX_COMPLETION_TOKENS` controls the completion budget for the strict JSON translation
   response, including modern model reasoning/output token accounting where applicable.
+  The default is `4096` because the sample contains long summaries and the LLM must return three
+  translated summaries in one strict JSON object.
 - Secrets are read server-side only. They are not written into generated HTML or JavaScript.
+- Successful translations are cached in `rendered/.cache/translations.json`. If a render is stopped
+  after some books were translated, running the command again resumes from cache hits and only calls
+  the LLM for missing cache entries.
 
 ## Commands
 
@@ -161,6 +166,10 @@ Render the sample with real translations if `.env` contains `LLM_API_KEY`:
 ```bash
 PYTHONPATH=src python -m brightlearn_site render data/samples/brightlearn_books.json
 ```
+
+The render command writes progress logs to both the terminal and `logs/app.log`. During real LLM
+translation you should see cache hits/misses, per-book attempts, retries, fallbacks, and final render
+completion.
 
 Start batch watcher without real LLM calls:
 
@@ -233,7 +242,7 @@ Latest local validation result:
 
 ```text
 environment: Python 3.12.13 provisioned by uv
-pytest: 55 passed
+pytest: 57 passed
 ruff: All checks passed
 compileall: passed
 render smoke: rendered 5 books to rendered/brightlearn_books

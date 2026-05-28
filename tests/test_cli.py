@@ -29,6 +29,26 @@ def test_render_command_writes_expected_output(tmp_path: Path, capsys) -> None:
     assert (tmp_path / "minimal_books" / "index.html").exists()
 
 
+def test_render_command_writes_logs(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    input_path = Path(__file__).resolve().parent / "fixtures" / "minimal_books.json"
+
+    exit_code = main(
+        [
+            "render",
+            str(input_path),
+            "--output-dir",
+            "rendered",
+            "--skip-translations",
+        ]
+    )
+
+    log_file = tmp_path / "logs" / "app.log"
+    assert exit_code == 0
+    assert log_file.exists()
+    assert "Render command started" in log_file.read_text(encoding="utf-8")
+
+
 def test_render_command_without_api_key_warns_and_falls_back(
     tmp_path: Path,
     capsys,

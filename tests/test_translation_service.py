@@ -64,6 +64,22 @@ def test_service_uses_cache_before_client(tmp_path: Path) -> None:
     assert result.used_fallback is False
 
 
+def test_service_logs_cache_hit_and_miss(tmp_path: Path, caplog) -> None:
+    settings = _settings(tmp_path / "translations.json")
+    client = FakeClient(['{"translations":{"es":"ES","fr":"FR","de":"DE"}}'])
+    service = SummaryTranslationService(settings=settings, client=client, sleep=False)
+
+    with caplog.at_level("INFO"):
+        service.translate_book(_book())
+        service.translate_book(_book())
+
+    assert "Translation cache miss" in caplog.text
+    assert "Translation request started" in caplog.text
+    assert "Translation request succeeded" in caplog.text
+    assert "Translation cache hit" in caplog.text
+    assert client.calls == 1
+
+
 def test_service_repairs_extra_prose_and_caches_result(tmp_path: Path) -> None:
     settings = _settings(tmp_path / "translations.json")
     client = FakeClient(

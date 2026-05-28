@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -21,6 +22,8 @@ from brightlearn_site.translation.service import (
     SummaryTranslationService,
 )
 from brightlearn_site.validator import validate_dataset
+
+LOGGER = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -93,18 +96,23 @@ def _validate_command(input_path: Path) -> int:
 
 
 def _render_command(input_path: Path, output_dir: Path, *, skip_translations: bool) -> int:
+    configure_logging()
+    LOGGER.info("Render command started. input=%s output_dir=%s", input_path, output_dir)
     data = load_json_file(input_path)
     dataset = normalize_dataset(data)
     plan = build_render_plan(dataset, input_path, output_dir)
     settings = load_settings()
     translation_service = _translation_service(settings, skip_translations=skip_translations)
     render_plan(plan, translation_service=translation_service)
-    print(f"Rendered {len(dataset.books)} books to {output_root_for_input(input_path, output_dir)}")
+    output_root = output_root_for_input(input_path, output_dir)
+    LOGGER.info("Render command finished. books=%s output=%s", len(dataset.books), output_root)
+    print(f"Rendered {len(dataset.books)} books to {output_root}")
     return 0
 
 
 def _watch_command(input_dir: Path, output_dir: Path, *, skip_translations: bool) -> int:
     configure_logging()
+    LOGGER.info("Watch command started. input_dir=%s output_dir=%s", input_dir, output_dir)
     settings = load_settings()
     translation_service = _translation_service(settings, skip_translations=skip_translations)
     return run_watch(input_dir, output_dir, translation_service=translation_service)

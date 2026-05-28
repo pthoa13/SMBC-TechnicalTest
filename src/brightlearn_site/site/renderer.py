@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import shutil
 import uuid
 from pathlib import Path
@@ -15,6 +16,8 @@ from brightlearn_site.site.planner import BookPage, RenderPlan, RenderTarget, Se
 from brightlearn_site.site.urls import asset_url, relative_url
 from brightlearn_site.translation.service import EnglishOnlyTranslationService, TranslationService
 
+LOGGER = logging.getLogger(__name__)
+
 
 def create_template_environment(template_dir: Path = TEMPLATE_DIR) -> Environment:
     return Environment(
@@ -24,11 +27,17 @@ def create_template_environment(template_dir: Path = TEMPLATE_DIR) -> Environmen
 
 
 def render_plan(plan: RenderPlan, translation_service: TranslationService | None = None) -> None:
+    _cleanup_stale_staging_roots(plan.output_root)
     staging_root = _staging_root_for(plan.output_root)
     if staging_root.exists():
         shutil.rmtree(staging_root)
 
     try:
+        LOGGER.info(
+            "Static render started. output=%s pages=%s",
+            plan.output_root,
+            len(plan.targets),
+        )
         staging_root.mkdir(parents=True, exist_ok=True)
         copy_static_assets(staging_root / "assets")
 
@@ -41,7 +50,12 @@ def render_plan(plan: RenderPlan, translation_service: TranslationService | None
         if plan.output_root.exists():
             shutil.rmtree(plan.output_root)
         staging_root.replace(plan.output_root)
-    except Exception:
+        LOGGER.info(
+            "Static render finished. output=%s pages=%s",
+            plan.output_root,
+            len(plan.targets),
+        )
+    except BaseException:
         if staging_root.exists():
             shutil.rmtree(staging_root)
         raise
@@ -63,6 +77,15 @@ def _render_target(
 
 def _staging_root_for(output_root: Path) -> Path:
     return output_root.parent / f".{output_root.name}.tmp-{uuid.uuid4().hex}"
+
+
+def _cleanup_stale_staging_roots(output_root: Path) -> None:
+    if not output_root.parent.exists():
+        return
+    for stale_root in output_root.parent.glob(f".{output_root.name}.tmp-*"):
+        if stale_root.is_dir():
+            LOGGER.info("Removing stale render staging folder. path=%s", stale_root)
+            shutil.rmtree(stale_root)
 
 
 def _staged_path(output_root: Path, staging_root: Path, output_path: Path) -> Path:
@@ -97,10 +120,17 @@ def _build_translation_context(
     plan: RenderPlan,
     translation_service: TranslationService,
 ) -> dict[str, SummaryTranslations]:
-    return {
-        book_page.slug: translation_service.translate_book(book_page.book)
-        for book_page in plan.book_pages
-    }
+    translations: dict[str, SummaryTranslations] = {}
+    total_books = len(plan.book_pages)
+    for index, book_page in enumerate(plan.book_pages, start=1):
+        LOGGER.info(
+            "Translating summary %s/%s. book=%s",
+            index,
+            total_books,
+            book_page.book.book_title,
+        )
+        translations[book_page.slug] = translation_service.translate_book(book_page.book)
+    return translations
 
 
 def _page_title(target: RenderTarget) -> str:

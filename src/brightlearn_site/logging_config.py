@@ -17,4 +17,5 @@ def configure_logging(log_dir: Path = Path("logs")) -> None:
             logging.StreamHandler(),
             logging.FileHandler(log_file, encoding="utf-8"),
         ],
+        force=True,
     )

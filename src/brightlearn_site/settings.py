@@ -17,7 +17,7 @@ class Settings:
     llm_base_url: str = "https://api.openai.com/v1"
     translation_timeout_seconds: int = 60
     translation_max_retries: int = 5
-    llm_max_completion_tokens: int = 1200
+    llm_max_completion_tokens: int = 4096
     translation_cache_path: Path = Path("rendered/.cache/translations.json")
 
 
@@ -30,7 +30,7 @@ def load_settings() -> Settings:
         llm_base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
         translation_timeout_seconds=int(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "60")),
         translation_max_retries=int(os.getenv("TRANSLATION_MAX_RETRIES", "5")),
-        llm_max_completion_tokens=int(os.getenv("LLM_MAX_COMPLETION_TOKENS", "1200")),
+        llm_max_completion_tokens=int(os.getenv("LLM_MAX_COMPLETION_TOKENS", "4096")),
         translation_cache_path=Path(
             os.getenv("TRANSLATION_CACHE_PATH", "rendered/.cache/translations.json")
         ),
