@@ -1,0 +1,32 @@
+{
+  "source": "Manual Batch Alpha",
+  "extraction_date": "2026-05-29",
+  "total_books": 1,
+  "books": [
+    {
+      "book_title": "Manual Batch Alpha Book",
+      "cover_image_url": "https://example.com/manual-alpha-cover.png",
+      "author": {
+        "name": "Manual QA"
+      },
+      "book_id": "manual-alpha",
+      "description": "A small manual fixture used to verify the first batch file renders successfully.",
+      "table_of_contents": [
+        {
+          "chapter_number": 1,
+          "chapter_title": "Alpha Chapter",
+          "sections": [
+            {
+              "title": "Alpha First Section",
+              "url": "https://example.com/manual-alpha/section-1.html"
+            },
+            {
+              "title": "Alpha Second Section",
+              "url": "https://example.com/manual-alpha/section-2.html"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

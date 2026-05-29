@@ -1,0 +1,36 @@
+{
+  "source": "Manual Batch Gamma",
+  "extraction_date": "2026-05-29",
+  "total_books": 1,
+  "books": [
+    {
+      "book_title": "Manual Batch Gamma Book",
+      "cover_image_url": "https://example.com/manual-gamma-cover.png",
+      "author": {
+        "name": "Manual QA"
+      },
+      "book_id": "manual-gamma",
+      "description": "A small manual fixture used to verify the third batch file renders successfully.",
+      "table_of_contents": [
+        {
+          "chapter_number": 1,
+          "chapter_title": "Gamma Chapter",
+          "sections": [
+            {
+              "title": "Gamma Overview Section",
+              "url": "https://example.com/manual-gamma/section-1.html"
+            },
+            {
+              "title": "Gamma Details Section",
+              "url": "https://example.com/manual-gamma/section-2.html"
+            },
+            {
+              "title": "Gamma Closing Section",
+              "url": "https://example.com/manual-gamma/section-3.html"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "source": "Manual Batch Beta",
+  "extraction_date": "2026-05-29",
+  "total_books": 1,
+  "books": [
+    {
+      "book_title": "Manual Batch Beta Book",
+      "cover_image_url": "https://example.com/manual-beta-cover.png",
+      "author": {
+        "name": "Manual QA"
+      },
+      "book_id": "manual-beta",
+      "description": "A small manual fixture used to verify the second batch file renders successfully.",
+      "table_of_contents": [
+        {
+          "chapter_number": 1,
+          "chapter_title": "Beta Chapter",
+          "sections": [
+            {
+              "title": "Beta Setup Section",
+              "url": "https://example.com/manual-beta/section-1.html"
+            }
+          ]
+        },
+        {
+          "chapter_number": 2,
+          "chapter_title": "Beta Follow-up Chapter",
+          "sections": [
+            {
+              "title": "Beta Follow-up Section",
+              "url": "https://example.com/manual-beta/section-2.html"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

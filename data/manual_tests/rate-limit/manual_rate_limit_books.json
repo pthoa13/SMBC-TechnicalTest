@@ -1,0 +1,28 @@
+{
+  "source": "Manual Rate Limit Test",
+  "extraction_date": "2026-05-29",
+  "total_books": 1,
+  "books": [
+    {
+      "book_title": "Manual Rate Limit Retry Book",
+      "cover_image_url": "https://example.com/manual-rate-limit-cover.png",
+      "author": {
+        "name": "Manual QA"
+      },
+      "book_id": "manual-rate-limit",
+      "description": "This short summary is used with the local mock OpenAI-compatible server to verify that one temporary HTTP 429 response is retried and then accepted when valid JSON is returned.",
+      "table_of_contents": [
+        {
+          "chapter_number": 1,
+          "chapter_title": "Retry Verification",
+          "sections": [
+            {
+              "title": "HTTP 429 Retry Section",
+              "url": "https://example.com/manual-rate-limit/section-1.html"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
