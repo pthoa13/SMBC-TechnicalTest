@@ -13,6 +13,8 @@ def test_language_switcher_javascript_targets_rendered_markup() -> None:
     assert "data-summary-output" in script
     assert "data-summary-switcher" in template
     assert "data-summary-output" in template
+    assert 'data-language="en"' in flags
     assert 'data-language="es"' in flags
     assert 'data-language="fr"' in flags
     assert 'data-language="de"' in flags
+    assert "img/flags/en.svg" in flags

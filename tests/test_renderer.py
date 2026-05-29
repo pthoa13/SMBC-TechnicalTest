@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -85,6 +86,7 @@ def test_render_book_page_embeds_translation_ui(tmp_path: Path) -> None:
 
     assert 'data-language="en"' in html
     assert 'data-language="es"' in html
+    assert 'img/flags/en.svg' in html
     assert 'img/flags/es.svg' in html
     assert 'img/flags/fr.svg' in html
     assert 'img/flags/de.svg' in html
@@ -105,6 +107,26 @@ def test_render_book_page_falls_back_to_english_translation_note(tmp_path: Path)
 
     assert "Translations are unavailable. Showing the English summary." in html
     assert "A short sample description." in html
+
+
+def test_render_sidebar_groups_outline_by_chapter_without_duplicate_numbering(
+    tmp_path: Path,
+) -> None:
+    data = load_json_file(Path("tests/fixtures/minimal_books.json"))
+    dataset = normalize_dataset(data)
+    plan = build_render_plan(dataset, Path("tests/fixtures/minimal_books.json"), tmp_path)
+
+    render_plan(plan)
+
+    book_index = tmp_path / "minimal_books" / "books" / "sample-book" / "index.html"
+    html = book_index.read_text(encoding="utf-8")
+
+    assert re.search(r'<details\s+class="sidebar-book"\s+open\b', html)
+    assert "sidebar-outline" in html
+    assert "Book overview" in html
+    assert "Chapter 1: Sample Chapter" in html
+    assert "Sample Section" in html
+    assert "1. Sample Section" not in html
 
 
 def test_render_plan_keeps_existing_output_if_render_fails(tmp_path: Path) -> None:

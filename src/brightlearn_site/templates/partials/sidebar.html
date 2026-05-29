@@ -3,28 +3,43 @@
     <p class="sidebar-label">Library</p>
     <a class="sidebar-home" href="{{ home_url }}">All books</a>
     {% for nav_book in navigation.book_pages %}
-      <section class="sidebar-book">
-        <a
-          class="sidebar-book-title{% if navigation.active_book and navigation.active_book.slug == nav_book.slug %} is-active{% endif %}"
-          href="{{ url_for(nav_book.output_path) }}"
-        >
-          {{ nav_book.book.book_title }}
-        </a>
-        {% if navigation.active_book and navigation.active_book.slug == nav_book.slug %}
-          <ol class="sidebar-sections">
-            {% for nav_section in nav_book.section_pages %}
-              <li>
-                <a
-                  class="{% if navigation.active_section and navigation.active_section.slug == nav_section.slug %}is-active{% endif %}"
-                  href="{{ url_for(nav_section.output_path) }}"
-                >
-                  {{ nav_section.page_number }}. {{ nav_section.section.title }}
-                </a>
-              </li>
-            {% endfor %}
-          </ol>
-        {% endif %}
-      </section>
+      <details
+        class="sidebar-book"
+        {% if navigation.active_book and navigation.active_book.slug == nav_book.slug %}open{% endif %}
+      >
+        <summary class="sidebar-book-summary{% if navigation.active_book and navigation.active_book.slug == nav_book.slug %} is-active{% endif %}">
+          <span class="sidebar-book-title{% if navigation.active_book and navigation.active_book.slug == nav_book.slug %} is-active{% endif %}">
+            {{ nav_book.book.book_title }}
+          </span>
+        </summary>
+        <div class="sidebar-outline">
+          <a
+            class="sidebar-book-overview{% if navigation.active_book and navigation.active_book.slug == nav_book.slug and not navigation.active_section %} is-active{% endif %}"
+            href="{{ url_for(nav_book.output_path) }}"
+          >
+            Book overview
+          </a>
+          {% for chapter in nav_book.book.table_of_contents %}
+            <section class="sidebar-chapter">
+              <p class="sidebar-chapter-title">Chapter {{ chapter.chapter_number }}: {{ chapter.chapter_title }}</p>
+              <ol class="sidebar-sections">
+                {% for nav_section in nav_book.section_pages %}
+                  {% if nav_section.chapter.chapter_number == chapter.chapter_number %}
+                    <li>
+                      <a
+                        class="{% if navigation.active_section and navigation.active_section.slug == nav_section.slug %}is-active{% endif %}"
+                        href="{{ url_for(nav_section.output_path) }}"
+                      >
+                        {{ nav_section.section.title }}
+                      </a>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+              </ol>
+            </section>
+          {% endfor %}
+        </div>
+      </details>
     {% endfor %}
   </div>
 </aside>

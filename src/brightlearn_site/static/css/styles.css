@@ -74,6 +74,7 @@ body {
 
 .sidebar-home,
 .sidebar-book-title,
+.sidebar-book-overview,
 .sidebar-sections a {
   display: block;
   color: var(--text);
@@ -90,25 +91,90 @@ body {
   margin: 0 0 18px;
 }
 
-.sidebar-book-title {
+.sidebar-book-summary {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
   border-radius: 8px;
+  cursor: pointer;
+  list-style: none;
   padding: 8px 10px;
-  font-weight: 700;
 }
 
-.sidebar-book-title.is-active,
+.sidebar-book-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-book-summary::before {
+  content: "›";
+  color: var(--accent-strong);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  transform: rotate(0deg);
+  transform-origin: center;
+  transition: transform 160ms ease;
+}
+
+.sidebar-book[open] > .sidebar-book-summary::before {
+  transform: rotate(90deg);
+}
+
+.sidebar-book-summary:hover,
+.sidebar-book-summary:focus-visible {
+  background: var(--soft);
+}
+
+.sidebar-book-title {
+  font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sidebar-book-summary.is-active,
+.sidebar-book-overview.is-active,
 .sidebar-sections a.is-active {
   background: var(--soft);
   color: var(--accent-strong);
 }
 
+.sidebar-book-title.is-active {
+  color: var(--accent-strong);
+}
+
+.sidebar-outline {
+  margin: 4px 0 0 22px;
+}
+
+.sidebar-book-overview {
+  border-radius: 6px;
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 4px 0 10px;
+  padding: 6px 8px;
+}
+
+.sidebar-chapter {
+  margin: 12px 0;
+}
+
+.sidebar-chapter-title {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .sidebar-sections {
-  margin: 8px 0 0;
-  padding-left: 18px;
+  margin: 0;
+  padding-left: 22px;
 }
 
 .sidebar-sections li {
-  margin: 6px 0;
+  margin: 5px 0;
   color: var(--muted);
 }
 
