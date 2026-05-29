@@ -37,6 +37,11 @@ rendered/brightlearn_books/index.html
 This validates the static renderer, generated navigation, responsive HTML/CSS, and English fallback
 behavior without requiring a real LLM API key.
 
+Expected output preview:
+
+- [Screenshots and compact committed HTML snapshot](docs/sample-output/README.md)
+- [Rendered HTML preview via htmlpreview.github.io](https://htmlpreview.github.io/?https://github.com/pthoa13/SMBC-TechnicalTest/blob/main/docs/sample-output/manual_batch_beta/index.html)
+
 To test real translation behavior, copy `.env.example` to `.env`, set `LLM_API_KEY`, and run:
 
 ```bash
@@ -96,6 +101,7 @@ src/brightlearn_site/
 
 data/samples/     Sample BrightLearn JSON copied from the provided input
 data/manual_tests/  Small fixtures for manual batch and LLM retry testing
+docs/sample-output/ Lightweight committed preview of successful generated output
 batch-process/    Runtime input folder for future JSON drops
 rendered/         Runtime generated static websites and translation cache
 logs/             Runtime logs
