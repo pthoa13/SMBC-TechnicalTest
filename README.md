@@ -12,6 +12,40 @@ Public repository:
 https://github.com/pthoa13/SMBC-TechnicalTest
 ```
 
+## Reviewer Quick Start
+
+Use this path to evaluate the project from a fresh clone.
+
+```bash
+uv python install 3.12
+uv venv --python 3.12 .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+PYTHONPATH=src python -m pytest
+PYTHONPATH=src python -m brightlearn_site render data/samples/brightlearn_books.json --skip-translations
+```
+
+On Windows PowerShell, activate the virtual environment with `.\.venv\Scripts\Activate.ps1` instead
+of `source .venv/bin/activate`.
+
+Then open:
+
+```text
+rendered/brightlearn_books/index.html
+```
+
+This validates the static renderer, generated navigation, responsive HTML/CSS, and English fallback
+behavior without requiring a real LLM API key.
+
+To test real translation behavior, copy `.env.example` to `.env`, set `LLM_API_KEY`, and run:
+
+```bash
+PYTHONPATH=src python -m brightlearn_site render data/samples/brightlearn_books.json
+```
+
+Successful translations are cached, so rerunning the command should use cache hits for unchanged
+book descriptions.
+
 ## Requirement Coverage
 
 - Render individual static pages for each of the 5 sample books.
@@ -20,7 +54,7 @@ https://github.com/pthoa13/SMBC-TechnicalTest
 - Use visually polished local CSS and static JavaScript navigation/summary switching.
 - Reference remote book cover images from the source URLs.
 - Translate only `Book.description`, not full book text, chapter titles, or section titles.
-- Display small Spain, France, and Germany flag controls near each book title.
+- Display small English, Spanish, French, and German flag controls near each book title.
 - Switch the displayed summary when a language flag is clicked.
 - Provide a reusable batch workflow through `batch-process/`, not a one-time conversion.
 - Process future compatible `.json` files into `rendered/<source-file-stem>/`.
@@ -61,11 +95,13 @@ src/brightlearn_site/
   templates/      Jinja templates for dataset, book, and section pages
 
 data/samples/     Sample BrightLearn JSON copied from the provided input
+data/manual_tests/  Small fixtures for manual batch and LLM retry testing
 batch-process/    Runtime input folder for future JSON drops
 rendered/         Runtime generated static websites and translation cache
 logs/             Runtime logs
 docs/             Specs, plans, tasks, reports, architecture, QA, and security context
 tests/            Unit and integration tests
+tools/            Local manual-test helper scripts
 ```
 
 Runtime files under `batch-process/`, `rendered/`, and `logs/` are ignored by Git except
@@ -171,6 +207,14 @@ The render command writes progress logs to both the terminal and `logs/app.log`.
 translation you should see cache hits/misses, per-book attempts, retries, fallbacks, and final render
 completion.
 
+Expected sample output:
+
+```text
+rendered/brightlearn_books/index.html
+rendered/brightlearn_books/books/<book-slug>/index.html
+rendered/brightlearn_books/books/<book-slug>/sections/<section-slug>.html
+```
+
 Start batch watcher without real LLM calls:
 
 ```bash
@@ -196,6 +240,62 @@ brightlearn-site validate data/samples/brightlearn_books.json
 brightlearn-site render data/samples/brightlearn_books.json --skip-translations
 brightlearn-site watch --skip-translations
 ```
+
+## Manual Evaluation Scenarios
+
+### Batch: drop three files at once
+
+Terminal 1:
+
+```bash
+rm -f batch-process/manual_batch_*.json
+rm -rf rendered/manual_batch_alpha rendered/manual_batch_beta rendered/manual_batch_gamma
+PYTHONPATH=src python -m brightlearn_site watch --skip-translations
+```
+
+Terminal 2:
+
+```bash
+cp data/manual_tests/batch-three-files/*.json batch-process/
+```
+
+Expected output:
+
+```text
+rendered/manual_batch_alpha/index.html
+rendered/manual_batch_beta/index.html
+rendered/manual_batch_gamma/index.html
+```
+
+The watcher processes files sequentially, waits for each file to become stable, logs success or
+failure per file, and ignores duplicate unchanged filesystem events.
+
+### LLM 429 retry without spending API credits
+
+Terminal 1:
+
+```bash
+python tools/mock_openai_rate_limit_server.py --port 8765 --rate-limit-count 1
+```
+
+Terminal 2:
+
+```bash
+rm -f rendered/.cache/manual-rate-limit-translations.json
+LLM_BASE_URL=http://127.0.0.1:8765/v1 \
+LLM_API_KEY=test_mock_key \
+TRANSLATION_CACHE_PATH=rendered/.cache/manual-rate-limit-translations.json \
+TRANSLATION_MAX_RETRIES=2 \
+PYTHONPATH=src \
+python -m brightlearn_site render data/manual_tests/rate-limit/manual_rate_limit_books.json
+```
+
+Expected behavior:
+
+- The mock server returns HTTP `429` for the first translation request.
+- The renderer logs a retry.
+- The second request succeeds with strict JSON translation content.
+- `rendered/manual_rate_limit_books/index.html` is generated.
 
 ## Opening the Static Site
 
@@ -242,7 +342,7 @@ Latest local validation result:
 
 ```text
 environment: Python 3.12.13 provisioned by uv
-pytest: 64 passed
+pytest: 65 passed
 ruff: All checks passed
 compileall: passed
 render smoke: rendered 5 books to rendered/brightlearn_books
@@ -251,6 +351,8 @@ generated output scan: 41,664 local links checked, 0 missing or unsafe
 secret scan: 0 API key or sensitive marker hits in rendered output/logs
 flag asset smoke: SVG flag assets copied into rendered output
 watcher smoke: copied JSON into batch-process and rendered output successfully
+manual 429 retry smoke: local mock server returned 429 then 200, render succeeded
+manual three-file batch smoke: three simultaneous fixture drops generated three output folders
 ```
 
 ## Manual QA Checklist
@@ -260,13 +362,20 @@ watcher smoke: copied JSON into batch-process and rendered output successfully
 - Confirm the dataset page lists all 5 sample books.
 - Open each book page and confirm title, author, cover image, English summary, language controls,
   and table of contents.
+- Confirm the English summary button uses the English flag icon, not a text-only `EN` label.
 - Click Spain, France, and Germany flag controls and confirm the summary switches when translations
   are available.
 - Confirm English remains visible when translations are skipped or unavailable.
+- Expand and collapse the sidebar book outlines and confirm sections are grouped under chapters
+  without duplicate numbering such as `1. 1.`.
 - Open several section pages and confirm breadcrumbs, book/chapter/section context, previous/next
   navigation, and original BrightLearn links.
 - Start watcher mode with `--skip-translations`, copy a JSON file into `batch-process/`, and confirm
   output appears under `rendered/<source-file-stem>/`.
+- Run the manual three-file batch fixture from `data/manual_tests/README.md` if multi-file batch
+  behavior needs to be demonstrated.
+- Run the mock 429 retry fixture from `data/manual_tests/README.md` if LLM retry behavior needs to be
+  demonstrated without using real API credits.
 - Check generated pages in Brave on Windows when available.
 
 ## Known Limitations
@@ -277,7 +386,9 @@ watcher smoke: copied JSON into batch-process and rendered output successfully
   out of scope/TBD in the project specs.
 - Sidecar job status files are not implemented because they are out of scope/TBD.
 - Real LLM API behavior depends on the configured provider, model, quota, and API key.
-- Windows/Brave compatibility is designed for through path-safe output and static relative links,
+- Batch files are processed sequentially. Parallel workers or a database-backed job queue are not
+  required by the original test prompt and are listed as out of scope in Spec 003.
+- Windows/Brave compatibility is designed through path-safe output and static relative links,
   but should be smoke-tested on an actual Windows machine before final delivery when possible.
 
 ## Documentation
