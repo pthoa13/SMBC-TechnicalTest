@@ -16,7 +16,7 @@
 
 Implemented Spec 002 summary translation infrastructure and UI integration. The project now supports strict JSON translation parsing, conservative JSON repair, deterministic translation caching, OpenAI-compatible LLM client behavior, retry/backoff policy, English fallback, CLI `--skip-translations`, and book-page language controls.
 
-No real LLM API call was made during implementation or validation. API-facing behavior was validated with mocked clients.
+API-facing behavior is covered by mocked tests, and a real-key OpenAI-compatible render smoke test was later run successfully with `gpt-4.1-mini`. The successful run verified 5 cached translation entries, one per sample book.
 
 ## What Changed
 
@@ -32,6 +32,10 @@ No real LLM API call was made during implementation or validation. API-facing be
 - Added book-page EN/ES/FR/DE language controls and summary switching JavaScript.
 - Embedded translations as escaped static HTML data attributes for local static browsing.
 - Added tests for parser, repair, cache, client error mapping, retry policy, service behavior, CLI fallback, and rendered UI.
+- Added resilience for malformed or empty translation cache files by moving corrupt cache files aside and continuing with an empty cache.
+- Added retryable handling for remote protocol disconnects and explicit detection of `finish_reason="length"` truncation.
+- Increased the default `LLM_MAX_COMPLETION_TOKENS` to `4096` to avoid truncating long three-language JSON translation responses.
+- Added render progress logging to both terminal and `logs/app.log`.
 
 ## Files Changed
 
@@ -75,8 +79,9 @@ Generated output was produced under `rendered/brightlearn_books/` for local veri
 | Retry on malformed JSON after repair fails | Covered | Invalid response errors are retryable in the service. |
 | HTTP 429 detection | Covered | Client maps 429 to `LLMRateLimitError`; service retries. |
 | Timeout/disconnect recovery | Covered | Client maps timeout/network errors to transient retryable errors. |
+| Truncated LLM output detection | Covered | Client treats `finish_reason="length"` as an invalid retryable response with guidance to increase token budget. |
 | Exponential backoff | Covered | `RetryPolicy` provides bounded exponential delays. |
-| Translation cache | Covered | Cache read/write and invalidation by description hash are tested. |
+| Translation cache | Covered | Cache read/write, invalidation by description hash, cache hit/miss logging, and corrupt cache recovery are tested. |
 | English fallback | Covered | Missing credentials or exhausted retries render English summary. |
 | Flag controls near book title | Covered | Book pages include EN/ES/FR/DE controls near title. |
 | Static UI switching | Covered | JavaScript switches summary text from embedded data attributes. |
@@ -91,6 +96,7 @@ Generated output was produced under `rendered/brightlearn_books/` for local veri
 - Expanded `tests/test_translation_cache.py`.
 - Expanded `tests/test_renderer.py`.
 - Expanded `tests/test_cli.py`.
+- Added `tests/test_static_js.py`.
 
 ## Validation Commands
 
@@ -105,18 +111,23 @@ PYTHONPATH=src python3 -m brightlearn_site render data/samples/brightlearn_books
 env -u LLM_API_KEY PYTHONPATH=src python3 -m brightlearn_site render data/samples/brightlearn_books.json
 python3 local generated-link checker
 rg -n "your_api_key_here|Authorization|Bearer|LLM_API_KEY|test-key" rendered/brightlearn_books || true
+PYTHONPATH=src .venv/bin/python -m brightlearn_site render data/samples/brightlearn_books.json
+python generated-output local link checker
+python generated-output secret scan
 ```
 
 ## Validation Results
 
-- Parser/cache targeted tests: passed, 9 tests.
-- Translation client/retry/service targeted tests: passed, 21 tests.
-- Renderer/CLI/translation integration tests: passed, 29 tests.
-- Full pytest suite: passed, 38 tests.
+- Parser/cache targeted tests: passed.
+- Translation client/retry/service targeted tests: passed.
+- Renderer/CLI/translation integration tests: passed.
+- Full pytest suite: passed, 64 tests.
 - Ruff: passed.
 - Compileall: passed.
 - Render with `--skip-translations`: passed.
 - Render with `LLM_API_KEY` unset: passed with warning and English fallback.
+- Real-key OpenAI-compatible render with `gpt-4.1-mini`: passed using cached translations.
+- Real translation cache count: 5 entries, each containing `es`, `fr`, and `de`.
 - Generated output count:
   - 393 total HTML pages.
   - 5 book pages.
@@ -124,15 +135,15 @@ rg -n "your_api_key_here|Authorization|Bearer|LLM_API_KEY|test-key" rendered/bri
 - Generated UI check:
   - EN, ES, FR, DE controls present on book pages.
   - English summary data present.
-  - Fallback note present when translations are unavailable.
-- Generated local link check: 41,649 local links checked, 0 missing or unsafe.
-- Secret marker check over generated output: no matches.
+  - Translated summary attributes present for all 5 book pages after real render.
+  - No fallback note present after real translation render.
+- Generated local link check: 41,664 local links checked, 0 missing or unsafe.
+- Secret marker check over generated output and logs: no API key or sensitive marker hits.
 
-Validation was run on macOS with Python 3.13.12. The project target remains Python 3.12+, and no Python 3.13-specific syntax was introduced.
+Validation was run on macOS with Python 3.12.13 provisioned by `uv`.
 
 ## Known Limitations
 
-- Real LLM API calls were not executed because no production API key/provider decision was supplied.
 - The implementation uses OpenAI-compatible chat completions by default, with provider/model/base URL configurable through environment variables.
 - Manual browser interaction was not automated in this session.
 - Brave on Windows was not available in this environment.
@@ -140,9 +151,7 @@ Validation was run on macOS with Python 3.13.12. The project target remains Pyth
 
 ## Follow-up Tasks
 
-- Run a real translation smoke test once `LLM_API_KEY`, provider, and model are confirmed.
 - Manually verify flag switching in Brave on Windows.
-- Implement Spec 003 batch processing.
 - Consider whether translated summaries should preserve user language choice across page reloads.
 
 ## Out of Scope
@@ -150,4 +159,3 @@ Validation was run on macOS with Python 3.13.12. The project target remains Pyth
 - Translating chapter titles, section titles, or full book/section content.
 - Browser-side LLM calls.
 - Multiple provider-specific clients beyond the current OpenAI-compatible implementation.
-- Batch processing.

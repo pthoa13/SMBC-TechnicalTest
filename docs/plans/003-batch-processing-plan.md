@@ -92,10 +92,9 @@ Optional CLI arguments may include:
 
 - Watchdog behavior may differ across operating systems.
 - Slow file copies can trigger premature processing.
-- Reprocessing strategy may need atomic output handling.
+- Reprocessing uses the shared atomic renderer, which stages output before replacing the final folder.
 
 ## Open Questions
 
 - Whether to archive completed files.
 - Whether to create sidecar status files for failures.
-- Exact atomic rebuild behavior.

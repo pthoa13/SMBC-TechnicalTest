@@ -80,6 +80,21 @@ def test_service_logs_cache_hit_and_miss(tmp_path: Path, caplog) -> None:
     assert client.calls == 1
 
 
+def test_service_recovers_from_malformed_cache_file(tmp_path: Path) -> None:
+    cache_path = tmp_path / "translations.json"
+    cache_path.write_text("{bad json", encoding="utf-8")
+    settings = _settings(cache_path)
+    client = FakeClient(['{"translations":{"es":"ES","fr":"FR","de":"DE"}}'])
+    service = SummaryTranslationService(settings=settings, client=client, sleep=False)
+
+    result = service.translate_book(_book())
+
+    assert result.es == "ES"
+    assert client.calls == 1
+    assert cache_path.exists()
+    assert list(tmp_path.glob("translations.corrupt-invalid-json-*.json"))
+
+
 def test_service_repairs_extra_prose_and_caches_result(tmp_path: Path) -> None:
     settings = _settings(tmp_path / "translations.json")
     client = FakeClient(

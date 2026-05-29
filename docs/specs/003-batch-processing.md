@@ -63,4 +63,3 @@ Process compatible BrightLearn JSON files placed in `batch-process/` and render 
 
 - Should completed files remain in `batch-process/` or be moved later?
 - Should failed files get sidecar status files?
-- What atomic rebuild behavior should be used when output already exists?

@@ -113,14 +113,14 @@ python3 local generated-link checker
 - Expected section count from JSON: 387.
 - Generated local link check: 41,649 local links checked, 0 missing or unsafe.
 
-Validation was run on macOS with Python 3.13.12. The project target remains Python 3.12+, and no Python 3.13-specific syntax was introduced.
+Validation was originally run on macOS with Python 3.13.12. Later readiness validation was run on macOS with Python 3.12.13 provisioned by `uv`.
 
 ## Known Limitations
 
 - Visual browser QA was not automated because the Browser tool was not available in this session.
 - Brave on Windows was not available in this environment.
 - Section pages render context and original BrightLearn links only because the current JSON does not provide local section body text.
-- Output rebuild currently removes and recreates the target output folder. A more atomic rebuild strategy remains an open question.
+- Output rebuild now uses a staging folder before replacing the final output folder, so failed renders leave the previous generated output intact.
 
 ## Follow-up Tasks
 
@@ -128,7 +128,6 @@ Validation was run on macOS with Python 3.13.12. The project target remains Pyth
 - Implement Spec 002 LLM summary translation.
 - Implement Spec 003 batch processing.
 - Decide whether to add a render manifest.
-- Decide whether to use an atomic output rebuild strategy.
 
 ## Out of Scope
 

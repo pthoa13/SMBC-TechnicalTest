@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
+from datetime import UTC, datetime
 from pathlib import Path
 
 from pydantic import ValidationError
 
 from brightlearn_site.models import TranslationBundle
 from brightlearn_site.translation.exceptions import TranslationCacheError
+
+LOGGER = logging.getLogger(__name__)
 
 TARGET_LANGUAGES = ("es", "fr", "de")
 SOURCE_LANGUAGE = "en"
@@ -62,17 +66,49 @@ class TranslationCache:
             return {}
 
         try:
-            payload = json.loads(self.path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as error:
-            message = f"Translation cache is not valid JSON: {self.path}"
-            raise TranslationCacheError(message) from error
+            raw_cache = self.path.read_text(encoding="utf-8")
         except OSError as error:
             raise TranslationCacheError(f"Could not read translation cache: {self.path}") from error
 
+        if not raw_cache.strip():
+            self._quarantine_invalid_cache("empty")
+            return {}
+
+        try:
+            payload = json.loads(raw_cache)
+        except json.JSONDecodeError:
+            self._quarantine_invalid_cache("invalid-json")
+            return {}
+
         if not isinstance(payload, dict):
-            raise TranslationCacheError("Translation cache root must be a JSON object.")
+            self._quarantine_invalid_cache("invalid-root")
+            return {}
 
         return payload
+
+    def _quarantine_invalid_cache(self, reason: str) -> None:
+        timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+        quarantine_path = self.path.with_name(
+            f"{self.path.stem}.corrupt-{reason}-{timestamp}{self.path.suffix}"
+        )
+        try:
+            self.path.rename(quarantine_path)
+        except OSError as error:
+            LOGGER.warning(
+                "Translation cache is %s and could not be quarantined; it will be overwritten "
+                "on the next successful cache write. path=%s error=%s",
+                reason,
+                self.path,
+                error,
+            )
+            return
+
+        LOGGER.warning(
+            "Translation cache is %s; moved aside and starting with an empty cache. old=%s new=%s",
+            reason,
+            self.path,
+            quarantine_path,
+        )
 
     def _save(self) -> None:
         try:

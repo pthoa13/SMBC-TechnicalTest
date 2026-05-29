@@ -425,7 +425,7 @@ User opens rendered/<source-file-stem>/index.html
 - Every input JSON renders into `rendered/<source-file-stem>/`.
 - The sample file `data/samples/brightlearn_books.json` renders into `rendered/brightlearn_books/`.
 - A batch file such as `batch-process/new_books.json` renders into `rendered/new_books/`.
-- Reprocessing should produce clean deterministic output. The exact atomic-write strategy is TBD and should be specified in the static-renderer plan before implementation.
+- Reprocessing should produce clean deterministic output. The renderer writes to a staging folder and replaces the final output folder only after rendering succeeds, so an interrupted or failed render leaves the previous output intact.
 - Section pages should be generated for every section in the table of contents. Because the current JSON includes section titles and source URLs but not section body text, generated section pages should include book/chapter/section context, local navigation, and a link to the original BrightLearn URL.
 
 ## Initial Translation Decisions
@@ -533,4 +533,3 @@ User opens rendered/<source-file-stem>/index.html
 - Should watcher processing move completed files to an archive folder, or leave them in `batch-process/`?
 - Should failed batch files be marked with sidecar status files?
 - Which LLM provider abstraction is sufficient without overengineering multiple providers?
-- What atomic-write or rollback strategy should be used when rebuilding an existing output folder?

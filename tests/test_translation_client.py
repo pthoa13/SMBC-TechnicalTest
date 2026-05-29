@@ -6,6 +6,7 @@ from brightlearn_site.translation.client import (
     OpenAICompatibleTranslationClient,
 )
 from brightlearn_site.translation.exceptions import (
+    InvalidLLMResponseError,
     LLMConfigurationError,
     LLMNonRetryableError,
     LLMRateLimitError,
@@ -80,12 +81,70 @@ def test_client_maps_timeout_to_transient(monkeypatch) -> None:
         client.translate_summary("Translate this")
 
 
+def test_client_maps_remote_protocol_error_to_transient(monkeypatch) -> None:
+    def fake_post(*args, **kwargs):
+        raise httpx.RemoteProtocolError("server disconnected")
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+
+    client = OpenAICompatibleTranslationClient(_config())
+
+    with pytest.raises(LLMTransientError):
+        client.translate_summary("Translate this")
+
+
 def test_client_maps_4xx_to_non_retryable(monkeypatch) -> None:
     monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: httpx.Response(400))
 
     client = OpenAICompatibleTranslationClient(_config())
 
     with pytest.raises(LLMNonRetryableError):
+        client.translate_summary("Translate this")
+
+
+def test_client_maps_length_finish_reason_to_invalid_response(monkeypatch) -> None:
+    monkeypatch.setattr(
+        httpx,
+        "post",
+        lambda *args, **kwargs: httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "length",
+                        "message": {"content": "{\"translations\":{\"es\":\"truncated"},
+                    }
+                ]
+            },
+        ),
+    )
+
+    client = OpenAICompatibleTranslationClient(_config())
+
+    with pytest.raises(InvalidLLMResponseError, match="max_completion_tokens"):
+        client.translate_summary("Translate this")
+
+
+def test_client_maps_content_filter_finish_reason_to_non_retryable(monkeypatch) -> None:
+    monkeypatch.setattr(
+        httpx,
+        "post",
+        lambda *args, **kwargs: httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "content_filter",
+                        "message": {"content": ""},
+                    }
+                ]
+            },
+        ),
+    )
+
+    client = OpenAICompatibleTranslationClient(_config())
+
+    with pytest.raises(LLMNonRetryableError, match="content filtering"):
         client.translate_summary("Translate this")
 
 

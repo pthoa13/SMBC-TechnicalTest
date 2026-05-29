@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import httpx
 
 from brightlearn_site.translation.exceptions import (
+    InvalidLLMResponseError,
     LLMConfigurationError,
     LLMNonRetryableError,
     LLMRateLimitError,
@@ -52,7 +53,12 @@ class OpenAICompatibleTranslationClient:
                 json=payload,
                 timeout=self.config.timeout_seconds,
             )
-        except (httpx.TimeoutException, httpx.ConnectError, httpx.NetworkError) as error:
+        except (
+            httpx.TimeoutException,
+            httpx.ConnectError,
+            httpx.NetworkError,
+            httpx.ProtocolError,
+        ) as error:
             message = "LLM request failed due to a transient network error."
             raise LLMTransientError(message) from error
 
@@ -71,6 +77,15 @@ class OpenAICompatibleTranslationClient:
             raise LLMNonRetryableError("LLM response body was not valid JSON.") from error
 
         try:
-            return str(payload["choices"][0]["message"]["content"])
+            choice = payload["choices"][0]
+            finish_reason = choice.get("finish_reason")
+            if finish_reason == "length":
+                raise InvalidLLMResponseError(
+                    "LLM response was truncated because max_completion_tokens was exhausted. "
+                    "Increase LLM_MAX_COMPLETION_TOKENS if this persists."
+                )
+            if finish_reason == "content_filter":
+                raise LLMNonRetryableError("LLM response was blocked by content filtering.")
+            return str(choice["message"]["content"])
         except (KeyError, IndexError, TypeError) as error:
             raise LLMNonRetryableError("LLM response did not include message content.") from error

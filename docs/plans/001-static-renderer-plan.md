@@ -107,4 +107,3 @@ python -m brightlearn_site render data/samples/brightlearn_books.json
 ## Open Questions
 
 - Whether to generate a manifest file.
-- Exact atomic overwrite strategy for existing output folders.

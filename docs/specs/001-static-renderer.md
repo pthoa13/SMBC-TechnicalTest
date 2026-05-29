@@ -67,5 +67,4 @@ Render BrightLearn JSON into a browsable static website under `rendered/<source-
 
 ## Open Questions
 
-- What exact atomic-write strategy should be used when overwriting an existing output folder?
 - Should a render manifest be written for debugging and tests?

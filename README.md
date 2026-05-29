@@ -242,10 +242,13 @@ Latest local validation result:
 
 ```text
 environment: Python 3.12.13 provisioned by uv
-pytest: 57 passed
+pytest: 64 passed
 ruff: All checks passed
 compileall: passed
 render smoke: rendered 5 books to rendered/brightlearn_books
+real LLM render: cache contains 5 translated book summaries
+generated output scan: 41,664 local links checked, 0 missing or unsafe
+secret scan: 0 API key or sensitive marker hits in rendered output/logs
 flag asset smoke: SVG flag assets copied into rendered output
 watcher smoke: copied JSON into batch-process and rendered output successfully
 ```
